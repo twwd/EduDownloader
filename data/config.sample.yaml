@@ -1,0 +1,33 @@
+--- # MoodleDownloader Config File
+- name: Informatik Moodle
+  base_url: https://moodle.informatik.tu-darmstadt.de
+  login_url: https://moodle.informatik.tu-darmstadt.de/login/index.php?authCAS=CAS
+  username: user
+  password: 'password with special chars'
+  courses:
+    - name: CNuvS Folien
+      id: 15
+      pattern: '\d\d CNuvS .*'
+      local_folder: /path/to/folder
+    - name: CER Folien
+      id: 47
+      pattern: 'Vorlesungsfolien'
+      local_folder: /path/to/folder
+    - name: VC Folien
+      id: 49
+      pattern: 'Vorlesungsfolien'
+      local_folder: /path/to/folder
+    - name: InfMan Folien
+      id: 17
+      pattern: 'Kapitel \d{1,2}: .*'
+      local_folder: /path/to/folder
+- name: TU Moodle
+  base_url: https://moodle.tu-darmstadt.de
+  login_url: https://moodle.tu-darmstadt.de/login/index.php
+  username: user
+  password: 'password'
+  courses:
+    - name: Mathe Skript
+      id: 7556
+      pattern: Skript - Kapitel
+      local_folder: /path/to/folder
