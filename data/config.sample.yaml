@@ -1,4 +1,3 @@
---- # MoodleDownloader Config File
 - name: Informatik Moodle
   base_url: https://moodle.informatik.tu-darmstadt.de
   login_url: https://moodle.informatik.tu-darmstadt.de/login/index.php?authCAS=CAS
