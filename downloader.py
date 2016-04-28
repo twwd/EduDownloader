@@ -10,7 +10,6 @@ from bs4 import BeautifulSoup
 # import config
 with open(os.path.join('data', 'config.yaml'), 'r') as config_file:
     config = yaml.load(config_file)
-    print(config)
     # disable HTTPS warnings
     requests.packages.urllib3.disable_warnings()
     # make the initial request to get the token
@@ -19,11 +18,14 @@ with open(os.path.join('data', 'config.yaml'), 'r') as config_file:
     # Loop through moodles
     for moodle in config:
         print('\nCurrent moodle is %s' % moodle['name'])
+
         # login
-        response = session.get(moodle['login_url'])
+        response = session.get(urljoin(moodle['base_url'], 'my'))
+        # check if the user is already signed in
         # TODO
-        if response.url != '' and response.text.find('Anmeldung erfolgreich') == -1:
-            print(response.url)
+        if response.status_code != -1:
+            print(response.status_code)
+            response = session.get(moodle['login_url'])
             # borrowed from Dominik
             match = re.search(r'<input type="hidden" name="lt" value="(.*?)" />', response.text)
             token = match.group(1)
