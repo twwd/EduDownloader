@@ -5,9 +5,9 @@ import sqlite3
 from urllib.parse import urljoin
 
 import requests
-# Connect to database
 from bs4 import BeautifulSoup
 
+# Connect to database
 conn = sqlite3.connect(os.path.join('data', 'moodle_downloader.db'))
 c = conn.cursor()
 c2 = conn.cursor()
@@ -25,7 +25,7 @@ for moodle in c2.execute('SELECT * FROM moodle'):
     if response.url != '' and response.text.find('Anmeldung erfolgreich') == -1:
         print('do login')
         print(response.url)
-        # lent from Dominik
+        # borrowed from Dominik
         match = re.search(r'<input type="hidden" name="lt" value="(.*?)" />', response.text)
         token = match.group(1)
         match = re.search(r'name="execution" value="(.*?)"', response.text)
