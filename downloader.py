@@ -34,8 +34,7 @@ for moodle in c2.execute('SELECT * FROM moodle'):
         params = {"username": moodle[3], "password": moodle[4], "lt": token,
                   "execution": execution, "_eventId": "submit",
                   "submit": "ANMELDEN"}
-        response = session.post(response.url, params)
-        response = session.get(moodle[1])
+        session.post(response.url, params)
 
     for course in c.execute('SELECT * FROM course WHERE moodle=?', (moodle[0],)):
         print(course[5])
