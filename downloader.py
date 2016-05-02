@@ -1,13 +1,36 @@
 #!/usr/bin/env python3
 import os
 import re
+import sqlite3
+from datetime import datetime
 from urllib.parse import urljoin
 
 import requests
 import yaml
 from bs4 import BeautifulSoup
 
-debug = True
+verbose_output = True
+download_count = 0
+skip_count = 0
+
+conn = sqlite3.connect(os.path.join('data', 'timestamps.db'))
+c = conn.cursor()
+
+# check if table exists otherwise create it
+try:
+    c.execute('SELECT * FROM timestamp')
+except sqlite3.OperationalError:
+    if verbose_output:
+        print("create table")
+    c.execute(
+        '''
+        CREATE TABLE `timestamp` (
+            `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+            `course`	TEXT,
+            `file_name`	TEXT,
+            `last_modified`	INTEGER
+        );
+        ''')
 
 # import config
 with open(os.path.join('data', 'config.yaml'), 'r') as config_file:
@@ -19,13 +42,12 @@ with open(os.path.join('data', 'config.yaml'), 'r') as config_file:
 
     # Loop through moodles
     for moodle in config:
-        if debug:
-            print('\nCurrent moodle is %s' % moodle['name'])
+        if verbose_output:
+            print('\nMoodle: %s' % moodle['name'])
 
         # login
         response = session.get(urljoin(moodle['base_url'], 'my'), allow_redirects=False)
         # check if the user is already signed in
-        # TODO
         if response.status_code != 301:
             response = session.get(moodle['login_url'])
             # borrowed from Dominik
@@ -41,19 +63,56 @@ with open(os.path.join('data', 'config.yaml'), 'r') as config_file:
 
         # loop through courses
         for course in moodle['courses']:
-            if debug:
-                print(course['name'])
+
+            if verbose_output:
+                print('Course: %s' % course['name'])
+
             course_url = urljoin(moodle['base_url'], '/course/view.php?id=' + str(course['id']))
+            # search only main content
             course_content = BeautifulSoup(session.get(course_url).text, 'html.parser').find(id='region-main')
+
             for link_text in course_content.find_all(string=re.compile(course['pattern'])):
                 link = link_text.find_parent('a')
                 if link is not None:
+                    # request file
                     file_request = session.get(link['href'])
+                    # get file name
                     file_disposition = file_request.headers['Content-Disposition']
                     file_name = file_disposition[
                                 file_disposition.index('filename=') + 10:len(file_disposition) - 1].encode(
                         "latin-1").decode("utf8")
-                    if debug:
+                    # get last modified date as timestamp
+                    file_last_modified = int(datetime.strptime(file_request.headers['Last-Modified'],
+                                                               '%a, %d %b %Y %H:%M:%S %Z').timestamp())
+                    if verbose_output:
                         print(file_name)
+                        print(int(file_last_modified))
+
+                    # fetch old timestamp from database
+                    file_last_modified_old = c.execute(
+                        'SELECT last_modified FROM timestamp WHERE course=? AND file_name=?',
+                        (course['name'], file_name)).fetchone()[0]
+
+                    # save file and timestamp in the database if it doesn't exists
+                    if file_last_modified_old is None:
+                        c.execute('INSERT INTO timestamp (course, file_name, last_modified) VALUES (?,?,?)',
+                                  (course['name'], file_name, file_last_modified))
+                    # update timestamp if there's a newer version of the file
+                    elif file_last_modified > file_last_modified_old:
+                        c.execute('UPDATE (last_modified) VALUES (?) FROM timestamp WHERE course=? and file_name=?',
+                                  (file_last_modified, course['name'], file_name))
+                    # otherwise skip saving
+                    else:
+                        skip_count += 1
+                        continue
+
+                    # save changes to the database
+                    conn.commit()
+
+                    # write file
                     with open(os.path.join(course['local_folder'], file_name), 'wb') as f:
                         f.write(file_request.content)
+                        download_count += 1
+
+# display count of downloaded files
+print('\nDownloaded %i file(s), skipped %i file(s)' % (download_count, skip_count))
