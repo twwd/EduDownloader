@@ -20,6 +20,11 @@
       id: 17
       pattern: 'Kapitel \d{1,2}: .*'
       local_folder: /path/to/folder
+    - name: CER Übung
+      id: 47
+      pattern: 'Übung'
+      local_folder: 'path/to/folder'
+      rename: 'Uebung_%.pdf'
 - name: TU Moodle
   base_url: https://moodle.tu-darmstadt.de
   login_url: https://moodle.tu-darmstadt.de/login/index.php

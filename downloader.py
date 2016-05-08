@@ -13,7 +13,8 @@ verbose_output = True
 download_count = 0
 skip_count = 0
 
-conn = sqlite3.connect(os.path.join('data', 'timestamps.db'))
+# database for timestamps
+conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'data', 'timestamps.db'))
 c = conn.cursor()
 
 # check if table exists otherwise create it
@@ -33,7 +34,7 @@ except sqlite3.OperationalError:
         ''')
 
 # import config
-with open(os.path.join('data', 'config.yaml'), 'r') as config_file:
+with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r') as config_file:
     config = yaml.load(config_file)
     # disable HTTPS warnings
     requests.packages.urllib3.disable_warnings()
