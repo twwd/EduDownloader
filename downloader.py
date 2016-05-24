@@ -102,9 +102,6 @@ with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r') a
                             num = num.group(0)
                         file_name = course['rename'].replace('%', str(num))
 
-                    if verbose_output:
-                        print(file_name)
-
                     # fetch old timestamp from database
                     file_last_modified_old = c.execute(
                         'SELECT last_modified FROM timestamp WHERE course=? AND file_name=?',
@@ -121,7 +118,12 @@ with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r') a
                     # otherwise skip saving
                     else:
                         skip_count += 1
+                        if verbose_output:
+                            print(file_name + ' (skipped)')
                         continue
+
+                    if verbose_output:
+                        print(file_name + ' (new)')
 
                     # save changes to the database
                     conn.commit()
