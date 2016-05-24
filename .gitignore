@@ -163,3 +163,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# data files
+data/config.yaml
+data/timestamps.db
