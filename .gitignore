@@ -166,4 +166,4 @@ ENV/
 
 # data files
 data/config.yaml
-data/timestamps.db
+data/file_modifications.db
