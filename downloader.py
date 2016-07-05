@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import re
 import sqlite3
@@ -9,7 +10,12 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 
-verbose_output = True
+# command line args
+parser = argparse.ArgumentParser(description='A simple script for downloading slides and excercises from moodles.')
+parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
+args = parser.parse_args()
+
+verbose_output = args.verbose
 download_count = 0
 skip_count = 0
 
