@@ -11,13 +11,15 @@ import yaml
 from bs4 import BeautifulSoup
 
 # command line args
-parser = argparse.ArgumentParser(description='A simple script for downloading slides and excercises from moodles.')
+parser = argparse.ArgumentParser(description='A simple script for downloading slides and exercises from moodles.')
 parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
+parser.add_argument('-c', '--course', action='append', help='specify a course which should be checked')
 args = parser.parse_args()
 
 verbose_output = args.verbose
 download_count = 0
 skip_count = 0
+course_part = args.course
 
 # database for timestamps
 conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'data', 'file_modifications.db'))
@@ -35,7 +37,7 @@ c.execute(
     ''')
 
 # import config
-with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r') as config_file:
+with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r', encoding='utf-8') as config_file:
     config = yaml.load(config_file)
 
 # make the initial request to get the token
@@ -64,6 +66,10 @@ for moodle in config:
 
     # loop through courses
     for course in moodle['courses']:
+
+        # check if only some courses should be checked
+        if course_part is not None and course['name'] not in course_part:
+            continue
 
         if verbose_output:
             print('Course: %s' % course['name'])
@@ -125,19 +131,27 @@ for moodle in config:
                 if verbose_output:
                     print(file_name + ' (new)')
 
-                # save changes to the database
-                conn.commit()
-
                 # request whole file
                 file_request = session.get(link['href'])
 
+                file_name = os.path.join(course['local_folder'], file_name)
+
                 # write file
-                with open(os.path.join(course['local_folder'], file_name), 'wb') as f:
-                    f.write(file_request.content)
-                    download_count += 1
+                try:
+                    # os.makedirs(os.path.dirname(file_name), exist_ok=True)
+                    with open(file_name, 'wb') as f:
+                        f.write(file_request.content)
+                        download_count += 1
+                except FileNotFoundError:
+                    print('Can\'t write file to %s' % os.path.join(course['local_folder'], file_name))
+                    conn.rollback()
+
+                # save changes to the database
+                conn.commit()
 
 # close cursor
 c.close()
 
 # display count of downloaded files
-print('\nDownloaded %i file(s), skipped %i file(s)' % (download_count, skip_count))
+if verbose_output:
+    print('\nDownloaded %i file(s), skipped %i file(s)' % (download_count, skip_count))
