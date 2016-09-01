@@ -75,8 +75,7 @@ def course_loop():
                     # check extension
                     if 'ext' in course and course['ext'] is not False:
                         file_ext = os.path.splitext(file_name)[1]
-                        print(file_ext)
-                        if file_ext is not course['ext']:
+                        if file_ext != course['ext']:
                             continue
 
                     # get last modified date as timestamp
