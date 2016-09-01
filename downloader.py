@@ -93,6 +93,13 @@ for moodle in config:
                 else:
                     file_name = link_text
 
+                # check extension
+                if 'ext' in course and course['ext'] is not False:
+                    file_ext = os.path.splitext(file_name)[1]
+                    print(file_ext)
+                    if file_ext is not course['ext']:
+                        continue
+
                 # get last modified date as timestamp
                 file_last_modified = int(datetime.strptime(file_request.headers['Last-Modified'],
                                                            '%a, %d %b %Y %H:%M:%S %Z').timestamp())
