@@ -134,9 +134,9 @@ def course_loop():
                     # save changes to the database
                     conn.commit()
 
-        # display count of downloaded files
-        if verbose_output:
-            print('\nDownloaded %i file(s), skipped %i file(s)' % (download_count, skip_count))
+    # display count of downloaded files
+    if verbose_output:
+        print('\nDownloaded %i file(s), skipped %i file(s)' % (download_count, skip_count))
 
 
 def clear_course():
