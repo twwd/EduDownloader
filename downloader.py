@@ -43,6 +43,9 @@ def course_loop():
                       'submit': 'ANMELDEN'}
             session.post(response.url, params)
 
+        if 'courses' not in moodle:
+            continue
+
         # loop through courses
         for course in moodle['courses']:
 
