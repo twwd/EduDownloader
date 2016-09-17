@@ -28,9 +28,11 @@ def course_loop():
             print('\nMoodle: %s' % moodle['name'])
 
         # login
-        response = session.get(urljoin(moodle['base_url'], 'my'), allow_redirects=False)
+        response = session.get(urljoin(moodle['base_url'], 'my/'), allow_redirects=False)
+        new_url = session.get(urljoin(moodle['base_url'], 'my/')).url
+
         # check if the user is already signed in
-        if response.status_code != 301:
+        if response.status_code != 301 or new_url != urljoin(moodle['base_url'], 'my/'):
             response = session.get(moodle['login_url'])
             # borrowed from Dominik
             match = re.search(r'<input type="hidden" name="lt" value="(.*?)" />', response.text)
