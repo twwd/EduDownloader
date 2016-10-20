@@ -140,7 +140,12 @@ def course_loop():
 
 
 def clear_course():
-    c.execute("DELETE from file_modifications WHERE course=?", course_to_clear)
+    if course_to_clear[0] == 'all':
+        c.execute("DELETE from file_modifications")
+        print('\nCleared all courses')
+    else:
+        c.execute("DELETE from file_modifications WHERE course=?", course_to_clear)
+        print('\nCleared course %s' % course_to_clear[0])
     conn.commit()
 
 
@@ -149,7 +154,7 @@ parser = argparse.ArgumentParser(description='A simple script for downloading sl
 parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
 parser.add_argument('-c', '--course', action='append', help='specify a course which should be checked')
 parser.add_argument('--clear', action='append',
-                    help='specify a course which files should be deleted from the database (not from file system)')
+                    help='specify a course which files should be deleted from the database (not from file system). Use keyword \'all\' to clear the whole database')
 args = parser.parse_args()
 
 verbose_output = args.verbose
