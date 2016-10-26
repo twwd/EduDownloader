@@ -10,6 +10,8 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 
+from sources import Source
+
 
 def course_loop():
     download_count = 0
@@ -19,6 +21,9 @@ def course_loop():
     with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r', encoding='utf-8') as config_file:
         config = yaml.load(config_file)
 
+    # load the sources module
+    module = __import__('sources')
+
     # make the initial request to get the token
     session = requests.Session()
 
@@ -27,23 +32,13 @@ def course_loop():
         if verbose_output:
             print('\nMoodle: %s' % moodle['name'])
 
-        # login
-        response = session.get(urljoin(moodle['base_url'], 'my/'), allow_redirects=False)
-        new_url = session.get(urljoin(moodle['base_url'], 'my/')).url
+        # load dynamically the source class
+        source_class = getattr(module, moodle['class'])
+        source = source_class()
+        source = Source()
 
-        # check if the user is already signed in
-        if response.status_code != 301 or new_url != urljoin(moodle['base_url'], 'my/'):
-            response = session.get(moodle['login_url'])
-            # borrowed from Dominik
-            match = re.search(r'<input type="hidden" name="lt" value="(.*?)" />', response.text)
-            token = match.group(1)
-            match = re.search(r'name="execution" value="(.*?)"', response.text)
-            execution = match.group(1)
-            # do the real login
-            params = {'username': moodle['username'], 'password': moodle['password'], 'lt': token,
-                      'execution': execution, '_eventId': 'submit',
-                      'submit': 'ANMELDEN'}
-            session.post(response.url, params)
+        # login
+        source.login(session, moodle['username'], moodle['password'], moodle['login_url'])
 
         if 'courses' not in moodle:
             continue
@@ -59,8 +54,11 @@ def course_loop():
                 print('Course: %s' % course['name'])
 
             course_url = urljoin(moodle['base_url'], '/course/view.php?id=' + str(course['id']))
+
             # search only main content
             course_content = BeautifulSoup(session.get(course_url).text, 'html.parser').find(id='region-main')
+
+            links = source.generate_link_list(session, course_url)
 
             for link_text in course_content.find_all(string=re.compile(course['pattern'])):
                 link = link_text.find_parent('a')
@@ -159,7 +157,8 @@ parser = argparse.ArgumentParser(description='A simple script for downloading sl
 parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
 parser.add_argument('-c', '--course', action='append', help='specify a course which should be checked')
 parser.add_argument('--clear', action='append',
-                    help='specify a course which files should be deleted from the database (not from file system). Use keyword \'all\' to clear the whole database')
+                    help='specify a course which files should be deleted from the database (not from file system).'
+                         + 'Use keyword \'all\' to clear the whole database')
 args = parser.parse_args()
 
 verbose_output = args.verbose
@@ -175,8 +174,10 @@ c.execute(
     '''
     CREATE TABLE IF NOT EXISTS file_modifications (
         id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        moodle TEXT,
         course	TEXT,
         file_name	TEXT,
+        file_path TEXT,
         last_modified	INTEGER
     );
     ''')
