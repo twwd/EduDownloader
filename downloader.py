@@ -10,8 +10,6 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 
-from sources import Source
-
 
 def course_loop():
     download_count = 0
@@ -35,10 +33,10 @@ def course_loop():
         # load dynamically the source class
         source_class = getattr(module, moodle['class'])
         source = source_class()
-        source = Source()
+        # source = Source()
 
         # login
-        source.login(session, moodle['username'], moodle['password'], moodle['login_url'])
+        source.login(session, moodle['login_url'], moodle['username'], moodle['password'])
 
         if 'courses' not in moodle:
             continue

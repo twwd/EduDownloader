@@ -25,7 +25,7 @@ class TUDarmstadtSSOLogin(Login):
     url = 'https://sso.hrz.tu-darmstadt.de/login'
 
     def login(self, session, username, password):
-        if not self.is_logged_in(self, session):
+        if not self.is_logged_in(session):
             response = session.get(self.url)
             # borrowed from Dominik
             match = re.search(r'<input type="hidden" name="lt" value="(.*?)" />', response.text)
@@ -39,7 +39,7 @@ class TUDarmstadtSSOLogin(Login):
             session.post(response.url, params)
 
     def is_logged_in(self, session):
-        response = session.get(self.url)
+        response = session.get(self.url).text
         return response.find("Log In Successful") != -1 or response.find("Anmeldung erfolgreich") != -1
 
 
@@ -48,7 +48,9 @@ class TUDarmstadtInformatikMoodle(Source):
         pass
 
     def login(self, session, login_url, username, password):
-        pass
+        sso = TUDarmstadtSSOLogin()
+        sso.login(session, username, password)
+        session.get(login_url)
 
 
 class TUDarmstadtMoodle(Source):
