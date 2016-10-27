@@ -11,6 +11,11 @@ import yaml
 from bs4 import BeautifulSoup
 
 
+def log(msg):
+    if verbose_output:
+        print(msg)
+
+
 def course_loop():
     download_count = 0
     skip_count = 0
@@ -26,32 +31,31 @@ def course_loop():
     session = requests.Session()
 
     # Loop through moodles
-    for moodle in config:
-        if verbose_output:
-            print('\nMoodle: %s' % moodle['name'])
+    for src in config:
+        log('\nSource: %s' % src['name'])
+
+        # check if there are courses to download from
+        if 'courses' not in src:
+            continue
 
         # load dynamically the source class
-        source_class = getattr(module, moodle['class'])
+        source_class = getattr(module, src['class'])
         source = source_class()
         # source = Source()
 
         # login
-        source.login(session, moodle['login_url'], moodle['username'], moodle['password'])
-
-        if 'courses' not in moodle:
-            continue
+        source.login(session, src['login_url'], src['username'], src['password'])
 
         # loop through courses
-        for course in moodle['courses']:
+        for course in src['courses']:
 
             # check if only some courses should be checked
             if course_part is not None and course['name'] not in course_part:
                 continue
 
-            if verbose_output:
-                print('Course: %s' % course['name'])
+            log('Course: %s' % course['name'])
 
-            course_url = urljoin(moodle['base_url'], '/course/view.php?id=' + str(course['id']))
+            course_url = urljoin(src['base_url'], '/course/view.php?id=' + str(course['id']))
 
             # search only main content
             course_content = BeautifulSoup(session.get(course_url).text, 'html.parser').find(id='region-main')
@@ -110,12 +114,10 @@ def course_loop():
                     # otherwise skip saving
                     else:
                         skip_count += 1
-                        if verbose_output:
-                            print(file_name + ' (skipped)')
+                        log(file_name + ' (skipped)')
                         continue
 
-                    if verbose_output:
-                        print(file_name + ' (new)')
+                    log(file_name + ' (new)')
 
                     # request whole file
                     file_request = session.get(link['href'])
@@ -124,7 +126,7 @@ def course_loop():
 
                     # write file
                     try:
-                        # os.makedirs(os.path.dirname(file_name), exist_ok=True)
+                        os.makedirs(os.path.dirname(file_name), exist_ok=True)
                         with open(file_name, 'wb') as f:
                             f.write(file_request.content)
                             download_count += 1
@@ -136,17 +138,16 @@ def course_loop():
                     conn.commit()
 
     # display count of downloaded files
-    if verbose_output:
-        print('\nDownloaded %i file(s), skipped %i file(s)' % (download_count, skip_count))
+    log('\nDownloaded %i file(s), skipped %i file(s)' % (download_count, skip_count))
 
 
 def clear_course():
     if course_to_clear[0] == 'all':
         c.execute("DELETE from file_modifications")
-        print('\nCleared all courses')
+        log('\nCleared all courses')
     else:
         c.execute("DELETE from file_modifications WHERE course=?", course_to_clear)
-        print('\nCleared course %s' % course_to_clear[0])
+        log('\nCleared course %s' % course_to_clear[0])
     conn.commit()
 
 
