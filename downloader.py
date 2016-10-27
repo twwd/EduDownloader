@@ -8,9 +8,9 @@ from urllib.parse import urljoin
 
 import requests
 import yaml
-from bs4 import BeautifulSoup
 
 
+# print if verbose output is on
 def log(msg):
     if verbose_output:
         print(msg)
@@ -32,16 +32,19 @@ def course_loop():
 
     # Loop through moodles
     for src in config:
-        log('\nSource: %s' % src['name'])
-
         # check if there are courses to download from
-        if 'courses' not in src:
+        if 'courses' not in src or (source_part is not None and src['name'] not in source_part):
             continue
 
+        log('\nSource: %s' % src['name'])
+
         # load dynamically the source class
-        source_class = getattr(module, src['class'])
-        source = source_class()
-        # source = Source()
+        try:
+            source_class = getattr(module, src['class'])
+            source = source_class()
+        except AttributeError:
+            print('Class not found. Check your config file.')
+            continue
 
         # login
         source.login(session, src['login_url'], src['username'], src['password'])
@@ -57,13 +60,13 @@ def course_loop():
 
             course_url = urljoin(src['base_url'], '/course/view.php?id=' + str(course['id']))
 
-            # search only main content
-            course_content = BeautifulSoup(session.get(course_url).text, 'html.parser').find(id='region-main')
-
             # regex pattern
             pattern = re.compile(course['pattern'])
 
-            links = source.generate_link_list(session, course_url)
+            # get all relevant links from the source site
+            links = source.link_list(session, course_url)
+
+            print(links)
 
             for link in links:
 
@@ -107,11 +110,11 @@ def course_loop():
                         (course['name'], file_name)).fetchone()
 
                     # save file and timestamp in the database if it doesn't exists
-                    if file_last_modified_old is None:
+                    if not simulate and file_last_modified_old is None:
                         c.execute('INSERT INTO file_modifications (course, file_name, last_modified) VALUES (?,?,?)',
                                   (course['name'], file_name, file_last_modified))
                     # update timestamp if there's a newer version of the file
-                    elif file_last_modified > file_last_modified_old[0]:
+                    elif not simulate and file_last_modified > file_last_modified_old[0]:
                         c.execute('UPDATE file_modifications SET last_modified=? WHERE course=? and file_name=?',
                                   (file_last_modified, course['name'], file_name))
                     # otherwise skip saving
@@ -121,6 +124,9 @@ def course_loop():
                         continue
 
                     log(file_name + ' (new)')
+
+                    if simulate:
+                        continue
 
                     # request whole file
                     file_request = session.get(link[1])
@@ -158,13 +164,17 @@ def clear_course():
 parser = argparse.ArgumentParser(description='A simple script for downloading slides and exercises from moodles.')
 parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
 parser.add_argument('-c', '--course', action='append', help='specify a course which should be checked')
+parser.add_argument('-s', '--source', action='append', help='specify a source which should be checked')
+parser.add_argument('--simulate', action='store_true', help='specify if the process should only be simulated')
 parser.add_argument('--clear', action='append',
                     help='specify a course which files should be deleted from the database (not from file system).'
                          + 'Use keyword \'all\' to clear the whole database')
 args = parser.parse_args()
 
 verbose_output = args.verbose
+simulate = args.simulate
 course_part = args.course
+source_part = args.source
 course_to_clear = args.clear
 
 # database for timestamps
@@ -183,6 +193,9 @@ c.execute(
         last_modified	INTEGER
     );
     ''')
+
+if simulate:
+    log("Simulation on")
 
 if course_to_clear is not None:
     clear_course()

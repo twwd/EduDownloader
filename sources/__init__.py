@@ -13,7 +13,7 @@ class Source(ABC):
         pass
 
     @abstractmethod
-    def generate_link_list(self, session, url):
+    def link_list(self, session, url):
         pass
 
 
@@ -45,8 +45,8 @@ class TUDarmstadtSSOLogin(Login):
         return response.find("Log In Successful") != -1 or response.find("Anmeldung erfolgreich") != -1
 
 
-class TUDarmstadtInformatikMoodle(Source):
-    def generate_link_list(self, session, url):
+class TUDarmstadtMoodle(Source):
+    def link_list(self, session, url):
         # link list
         link_list = []
 
@@ -65,25 +65,31 @@ class TUDarmstadtInformatikMoodle(Source):
         session.get(login_url)
 
 
-class TUDarmstadtMoodle(Source):
-    def generate_link_list(self, session, url):
-        pass
-
-    def login(self, session, login_url, username, password):
-        pass
-
-
 class TUDarmstadtFacultySite(Source):
-    def generate_link_list(self, session, url):
+    def link_list(self, session, url):
         pass
 
     def login(self, session, login_url, username, password):
-        pass
+        sso = TUDarmstadtSSOLogin()
+        sso.login(session, username, password)
+        session.get(login_url)
 
 
 class SimpleSite(Source):
-    def generate_link_list(self, session, url):
-        pass
+    def link_list(self, session, url):
+        # link list
+        link_list = []
+
+        # search all links
+        site_links = BeautifulSoup(session.get(url).text, 'html.parser').findAll('a')
+
+        if site_links is None:
+            return
+
+        # loop through links
+        for link in site_links:
+            link_list.append(Link(text=link.get_text(), url=link['href']))
+        return link_list
 
     def login(self, session, login_url, username, password):
         pass
