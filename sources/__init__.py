@@ -2,7 +2,9 @@ import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 
-Link = namedtuple('Link', ['title', 'filename', 'url'])
+from bs4 import BeautifulSoup
+
+Link = namedtuple('Link', ['text', 'url'])
 
 
 class Source(ABC):
@@ -33,7 +35,7 @@ class TUDarmstadtSSOLogin(Login):
             match = re.search(r'name="execution" value="(.*?)"', response.text)
             execution = match.group(1)
             # do the real login
-            params = {'username': username, 'password': 'password', 'lt': token,
+            params = {'username': username, 'password': password, 'lt': token,
                       'execution': execution, '_eventId': 'submit',
                       'submit': 'ANMELDEN'}
             session.post(response.url, params)
@@ -45,7 +47,17 @@ class TUDarmstadtSSOLogin(Login):
 
 class TUDarmstadtInformatikMoodle(Source):
     def generate_link_list(self, session, url):
-        pass
+        # link list
+        link_list = []
+
+        # search only main content
+        course_content = BeautifulSoup(session.get(url).text, 'html.parser').find(id='region-main').findAll('a')
+
+        # loop through links
+        for link in course_content:
+            if link is not None and link['href'].find('resource') != -1:
+                link_list.append(Link(text=link.get_text(), url=link['href']))
+        return link_list
 
     def login(self, session, login_url, username, password):
         sso = TUDarmstadtSSOLogin()

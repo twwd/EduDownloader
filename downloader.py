@@ -60,13 +60,16 @@ def course_loop():
             # search only main content
             course_content = BeautifulSoup(session.get(course_url).text, 'html.parser').find(id='region-main')
 
+            # regex pattern
+            pattern = re.compile(course['pattern'])
+
             links = source.generate_link_list(session, course_url)
 
-            for link_text in course_content.find_all(string=re.compile(course['pattern'])):
-                link = link_text.find_parent('a')
-                if link is not None and link['href'].find('resource') != -1:
+            for link in links:
+
+                if pattern.search(link[0]) is not None:
                     # request file http header
-                    file_request = session.head(link['href'], allow_redirects=True)
+                    file_request = session.head(link[1], allow_redirects=True)
 
                     # get file name
                     if 'Content-Disposition' in file_request.headers:
@@ -75,7 +78,7 @@ def course_loop():
                                     file_disposition.index('filename=') + 10:len(file_disposition) - 1].encode(
                             'latin-1').decode('utf8')
                     else:
-                        file_name = link_text
+                        file_name = link[0]
 
                     # check extension
                     if 'ext' in course and course['ext'] is not False:
@@ -89,7 +92,7 @@ def course_loop():
                     # adjust file name
                     if 'rename' in course and course['rename'] is not False:
                         # find a number
-                        num = re.search('\d{1,2}', link_text)
+                        num = re.search('\d{1,2}', link[0])
                         if num is None:
                             num = re.search('\d{1,2}', file_name)
                         if num is None:
@@ -120,7 +123,7 @@ def course_loop():
                     log(file_name + ' (new)')
 
                     # request whole file
-                    file_request = session.get(link['href'])
+                    file_request = session.get(link[1])
 
                     file_name = os.path.join(course['local_folder'], file_name)
 
