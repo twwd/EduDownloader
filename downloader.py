@@ -4,7 +4,6 @@ import os
 import re
 import sqlite3
 from datetime import datetime
-from urllib.parse import urljoin
 
 import requests
 import yaml
@@ -21,8 +20,12 @@ def course_loop():
     skip_count = 0
 
     # import config
-    with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r', encoding='utf-8') as config_file:
-        config = yaml.load(config_file)
+    try:
+        with open(os.path.join(os.path.dirname(__file__), 'data', 'config.yaml'), 'r', encoding='utf-8') as config_file:
+            config = yaml.load(config_file)
+    except FileNotFoundError:
+        print("Please provide a config file under data/config.yaml.")
+        return
 
     # load the sources module
     module = __import__('sources')
@@ -43,11 +46,12 @@ def course_loop():
             source_class = getattr(module, src['class'])
             source = source_class()
         except AttributeError:
-            print('Class not found. Check your config file.')
+            print('Class %s not found. Check your config file.' % src['class'])
             continue
 
         # login
-        source.login(session, src['login_url'], src['username'], src['password'])
+        if 'login_url' in src and 'username' in src and 'password' in src:
+            source.login(session, src['login_url'], src['username'], src['password'])
 
         # loop through courses
         for course in src['courses']:
@@ -58,15 +62,16 @@ def course_loop():
 
             log('Course: %s' % course['name'])
 
-            course_url = urljoin(src['base_url'], '/course/view.php?id=' + str(course['id']))
+            if 'param' in course and course['param'] is not None:
+                course_url = source.course_url(src['base_url'], course['param'])
+            else:
+                course_url = src['base_url']
 
             # regex pattern
             pattern = re.compile(course['pattern'])
 
             # get all relevant links from the source site
             links = source.link_list(session, course_url)
-
-            print(links)
 
             for link in links:
 
@@ -81,12 +86,13 @@ def course_loop():
                                     file_disposition.index('filename=') + 10:len(file_disposition) - 1].encode(
                             'latin-1').decode('utf8')
                     else:
-                        file_name = link[0]
+                        # last part of the link (usually filename)
+                        file_name = link[1].rsplit('/', 1)[-1]
 
                     # check extension
                     if 'ext' in course and course['ext'] is not False:
                         file_ext = os.path.splitext(file_name)[1]
-                        if file_ext != course['ext']:
+                        if file_ext != course['ext'] or file_ext not in course['ext']:
                             continue
 
                     # get last modified date as timestamp
@@ -104,19 +110,27 @@ def course_loop():
                             num = num.group(0)
                         file_name = course['rename'].replace('%', str(num))
 
+                    # the complete file path
+                    file_path = os.path.join(course['local_folder'], file_name)
+
                     # fetch old timestamp from database
                     file_last_modified_old = c.execute(
-                        'SELECT last_modified FROM file_modifications WHERE course=? AND file_name=?',
-                        (course['name'], file_name)).fetchone()
+                        'SELECT last_modified FROM file_modifications WHERE source=? AND course=? AND file_name=?',
+                        (src['name'], course['name'], file_name)).fetchone()
 
                     # save file and timestamp in the database if it doesn't exists
                     if not simulate and file_last_modified_old is None:
-                        c.execute('INSERT INTO file_modifications (course, file_name, last_modified) VALUES (?,?,?)',
-                                  (course['name'], file_name, file_last_modified))
+                        c.execute(
+                            '''
+                            INSERT INTO file_modifications (source, course, file_name, file_path, last_modified)
+                            VALUES (?,?,?,?,?)
+                            ''',
+                            (src['name'], course['name'], file_name, file_path, file_last_modified))
                     # update timestamp if there's a newer version of the file
                     elif not simulate and file_last_modified > file_last_modified_old[0]:
-                        c.execute('UPDATE file_modifications SET last_modified=? WHERE course=? and file_name=?',
-                                  (file_last_modified, course['name'], file_name))
+                        c.execute(
+                            'UPDATE file_modifications SET last_modified=? WHERE source=? AND course=? and file_name=?',
+                            (file_last_modified, source['name'], course['name'], file_name))
                     # otherwise skip saving
                     else:
                         skip_count += 1
@@ -131,16 +145,14 @@ def course_loop():
                     # request whole file
                     file_request = session.get(link[1])
 
-                    file_name = os.path.join(course['local_folder'], file_name)
-
                     # write file
                     try:
-                        os.makedirs(os.path.dirname(file_name), exist_ok=True)
-                        with open(file_name, 'wb') as f:
+                        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                        with open(file_path, 'wb') as f:
                             f.write(file_request.content)
                             download_count += 1
                     except FileNotFoundError:
-                        print('Can\'t write file to %s' % os.path.join(course['local_folder'], file_name))
+                        print('Can\'t write file to %s' % file_path)
                         conn.rollback()
 
                     # save changes to the database
@@ -161,11 +173,12 @@ def clear_course():
 
 
 # command line args
-parser = argparse.ArgumentParser(description='A simple script for downloading slides and exercises from moodles.')
+parser = argparse.ArgumentParser(
+    description='A simple script for downloading slides and exercises for university lectures.')
 parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
 parser.add_argument('-c', '--course', action='append', help='specify a course which should be checked')
 parser.add_argument('-s', '--source', action='append', help='specify a source which should be checked')
-parser.add_argument('--simulate', action='store_true', help='specify if the process should only be simulated')
+parser.add_argument('-sim', '--simulate', action='store_true', help='specify if the process should only be simulated')
 parser.add_argument('--clear', action='append',
                     help='specify a course which files should be deleted from the database (not from file system).'
                          + 'Use keyword \'all\' to clear the whole database')
@@ -186,7 +199,7 @@ c.execute(
     '''
     CREATE TABLE IF NOT EXISTS file_modifications (
         id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        moodle TEXT,
+        source TEXT,
         course	TEXT,
         file_name	TEXT,
         file_path TEXT,

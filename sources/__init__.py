@@ -1,6 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
@@ -14,6 +15,10 @@ class Source(ABC):
 
     @abstractmethod
     def link_list(self, session, url):
+        pass
+
+    @abstractmethod
+    def course_url(self, url, param):
         pass
 
 
@@ -64,6 +69,9 @@ class TUDarmstadtMoodle(Source):
         sso.login(session, username, password)
         session.get(login_url)
 
+    def course_url(self, url, param):
+        return urljoin(url, '/course/view.php?id=' + str(param))
+
 
 class TUDarmstadtFacultySite(Source):
     def link_list(self, session, url):
@@ -73,6 +81,9 @@ class TUDarmstadtFacultySite(Source):
         sso = TUDarmstadtSSOLogin()
         sso.login(session, username, password)
         session.get(login_url)
+
+    def course_url(self, url, param):
+        return urljoin(url, param)
 
 
 class SimpleSite(Source):
@@ -88,8 +99,11 @@ class SimpleSite(Source):
 
         # loop through links
         for link in site_links:
-            link_list.append(Link(text=link.get_text(), url=link['href']))
+            link_list.append(Link(text=link.get_text(), url=urljoin(url, link['href'])))
         return link_list
 
     def login(self, session, login_url, username, password):
         pass
+
+    def course_url(self, url, param):
+        return urljoin(url, param)
