@@ -36,7 +36,7 @@
       pattern: Skript - Kapitel
       local_folder: /path/to/folder
 - name: STG Github
-  class: SimpleSite
+  class: simpelsite.SimpleSite
   base_url: https://stg-tud.github.io/sedc/Lecture/ws16-17/
   courses:
     - name: SEDC Folien

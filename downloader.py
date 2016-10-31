@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import importlib
 import os
 import re
 import sqlite3
@@ -7,6 +8,18 @@ from datetime import datetime
 
 import requests
 import yaml
+
+
+def load_plugin_class(plugin_class_str):
+    """
+    dynamically load a class from a string
+    """
+    class_data = plugin_class_str.split(".")
+    module_path = "plugins." + ".".join(class_data[:-1])
+    class_str = class_data[-1]
+
+    module = importlib.import_module(module_path)
+    return getattr(module, class_str)
 
 
 # print if verbose output is on
@@ -27,34 +40,36 @@ def course_loop():
         print("Please provide a config file under data/config.yaml.")
         return
 
-    # load the sources module
-    module = __import__('sources')
-
     # make the initial request to get the token
     session = requests.Session()
 
     # Loop through moodles
-    for src in config:
+    for src_cfg in config:
         # check if there are courses to download from
-        if 'courses' not in src or (source_part is not None and src['name'] not in source_part):
+        if 'courses' not in src_cfg or (source_part is not None and src_cfg['name'] not in source_part):
             continue
 
-        log('\nSource: %s' % src['name'])
+        log('\nSource: %s' % src_cfg['name'])
 
         # load dynamically the source class
         try:
-            source_class = getattr(module, src['class'])
-            source = source_class()
+            src_class = load_plugin_class(src_cfg['class'])
+            src = src_class()
         except AttributeError:
-            print('Class %s not found. Check your config file.' % src['class'])
+            print('Class %s not found. Check your config file.' % src_cfg['class'])
+            continue
+        except ImportError:
+            print(
+                'Class %s not found. Check your config file' % src_cfg['class']
+                + ' and ensure you have the class qualifier relative to the plugin directory.')
             continue
 
         # login
-        if 'login_url' in src and 'username' in src and 'password' in src:
-            source.login(session, src['login_url'], src['username'], src['password'])
+        if 'login_url' in src_cfg and 'username' in src_cfg and 'password' in src_cfg:
+            src.login(session, src_cfg['login_url'], src_cfg['username'], src_cfg['password'])
 
         # loop through courses
-        for course in src['courses']:
+        for course in src_cfg['courses']:
 
             # check if only some courses should be checked
             if course_part is not None and course['name'] not in course_part:
@@ -63,18 +78,21 @@ def course_loop():
             log('Course: %s' % course['name'])
 
             if 'param' in course and course['param'] is not None:
-                course_url = source.course_url(src['base_url'], course['param'])
+                course_url = src.course_url(src_cfg['base_url'], course['param'])
             else:
-                course_url = src['base_url']
+                course_url = src_cfg['base_url']
 
             # regex pattern
             pattern = re.compile(course['pattern'])
 
             # get all relevant links from the source site
-            links = source.link_list(session, course_url)
+            links = src.link_list(session, course_url)
+
+            if links is None:
+                continue
+            print(links)
 
             for link in links:
-
                 if pattern.search(link[0]) is not None:
                     # request file http header
                     file_request = session.head(link[1], allow_redirects=True)
@@ -116,7 +134,7 @@ def course_loop():
                     # fetch old timestamp from database
                     file_last_modified_old = c.execute(
                         'SELECT last_modified FROM file_modifications WHERE source=? AND course=? AND file_name=?',
-                        (src['name'], course['name'], file_name)).fetchone()
+                        (src_cfg['name'], course['name'], file_name)).fetchone()
 
                     # save file and timestamp in the database if it doesn't exists
                     if not simulate and file_last_modified_old is None:
@@ -125,12 +143,12 @@ def course_loop():
                             INSERT INTO file_modifications (source, course, file_name, file_path, last_modified)
                             VALUES (?,?,?,?,?)
                             ''',
-                            (src['name'], course['name'], file_name, file_path, file_last_modified))
+                            (src_cfg['name'], course['name'], file_name, file_path, file_last_modified))
                     # update timestamp if there's a newer version of the file
                     elif not simulate and file_last_modified > file_last_modified_old[0]:
                         c.execute(
                             'UPDATE file_modifications SET last_modified=? WHERE source=? AND course=? and file_name=?',
-                            (file_last_modified, source['name'], course['name'], file_name))
+                            (file_last_modified, src_cfg['name'], course['name'], file_name))
                     # otherwise skip saving
                     else:
                         skip_count += 1
