@@ -90,7 +90,6 @@ def course_loop():
 
             if links is None:
                 continue
-            print(links)
 
             for link in links:
                 if pattern.search(link[0]) is not None:
