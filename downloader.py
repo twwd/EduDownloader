@@ -49,7 +49,7 @@ def course_loop():
         if 'courses' not in src_cfg or (source_part is not None and src_cfg['name'] not in source_part):
             continue
 
-        log('\nSource: %s' % src_cfg['name'])
+        log('\n\nSource: %s' % src_cfg['name'])
 
         # load dynamically the source class
         try:
@@ -75,7 +75,7 @@ def course_loop():
             if course_part is not None and course['name'] not in course_part:
                 continue
 
-            log('Course: %s' % course['name'])
+            log('\nCourse: %s\n' % course['name'])
 
             if 'param' in course and course['param'] is not None:
                 course_url = src.course_url(src_cfg['base_url'], course['param'])
@@ -109,12 +109,19 @@ def course_loop():
                     # check extension
                     if 'ext' in course and course['ext'] is not False:
                         file_ext = os.path.splitext(file_name)[1]
-                        if file_ext != course['ext'] or file_ext not in course['ext']:
+                        if file_ext != course['ext'] and file_ext not in course['ext']:
                             continue
 
                     # get last modified date as timestamp
-                    file_last_modified = int(datetime.strptime(file_request.headers['Last-Modified'],
-                                                               '%a, %d %b %Y %H:%M:%S %Z').timestamp())
+                    if 'Last-Modified' in file_request.headers:
+                        file_last_modified = int(datetime.strptime(file_request.headers['Last-Modified'],
+                                                                   '%a, %d %b %Y %H:%M:%S %Z').timestamp())
+                    elif 'Date' in file_request.headers:
+                        file_last_modified = int(datetime.strptime(file_request.headers['Date'],
+                                                                   '%a, %d %b %Y %H:%M:%S %Z').timestamp())
+                    else:
+                        print("No timestamp found for file %s" % file_name)
+
                     # adjust file name
                     if 'rename' in course and course['rename'] is not False:
                         # find a number
@@ -157,6 +164,7 @@ def course_loop():
                     log(file_name + ' (new)')
 
                     if simulate:
+                        conn.rollback()
                         continue
 
                     # request whole file

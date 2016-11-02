@@ -29,15 +29,17 @@ class TUDarmstadtSSOLogin(Login):
 
 
 class TUDarmstadtMoodle(Source):
-    def get_links(self, session, url):
-        return BeautifulSoup(session.get(url).text, 'html.parser').find(id='region-main').findAll('a')
+    def get_links(self, html, url):
+        return html.find(id='region-main').findAll('a')
 
     def link_list(self, session, url):
         # link list
         link_list = []
 
+        html = BeautifulSoup(session.get(url).text, 'html.parser')
+
         # get all links
-        links = self.get_links(session, url)
+        links = self.get_links(html, url)
 
         # loop through links
         for link in links:
@@ -55,8 +57,8 @@ class TUDarmstadtMoodle(Source):
 
 
 class TUDarmstadtFacultySite(Source):
-    def get_links(self, session, url):
-        return BeautifulSoup(session.get(url).text, 'html.parser').findAll('a')
+    def get_links(self, html, url):
+        return html.findAll('a')
 
     def login(self, session, login_url, username, password):
         sso = TUDarmstadtSSOLogin()
