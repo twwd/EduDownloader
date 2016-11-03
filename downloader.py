@@ -116,11 +116,10 @@ def course_loop():
                     if 'Last-Modified' in file_request.headers:
                         file_last_modified = int(datetime.strptime(file_request.headers['Last-Modified'],
                                                                    '%a, %d %b %Y %H:%M:%S %Z').timestamp())
-                    elif 'Date' in file_request.headers:
-                        file_last_modified = int(datetime.strptime(file_request.headers['Date'],
-                                                                   '%a, %d %b %Y %H:%M:%S %Z').timestamp())
                     else:
                         print("No timestamp found for file %s" % file_name)
+                        conn.rollback()
+                        continue
 
                     # adjust file name
                     if 'rename' in course and course['rename'] is not False:
