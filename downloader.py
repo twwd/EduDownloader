@@ -43,7 +43,7 @@ def course_loop():
     # make the initial request to get the token
     session = requests.Session()
 
-    # Loop through moodles
+    # Loop through sources
     for src_cfg in config:
         # check if there are courses to download from
         if 'courses' not in src_cfg or (source_part is not None and src_cfg['name'] not in source_part):

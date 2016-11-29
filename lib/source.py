@@ -25,7 +25,6 @@ class Source(ABC):
         links = self.get_links(html, url)
 
         if base is not None and base.has_attr('href'):
-            print("Base tag found")
             url = base['href']
 
         # loop through links

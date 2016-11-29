@@ -1,6 +1,7 @@
 - name: Informatik Moodle
+  class: tudarmstadt.TUDarmstadtMoodle
   base_url: https://moodle.informatik.tu-darmstadt.de
-  login_url: https://moodle.informatik.tu-darmstadt.de/login/index.php?authCAS=CAS
+  login_url: https://moodle.informatik.tu-darmstadt.de/mod/url/view.php?id=1308
   username: user
   password: 'password with special chars'
   courses:
@@ -26,6 +27,7 @@
       local_folder: 'path/to/folder'
       rename: 'Uebung_%.pdf'
 - name: TU Moodle
+  class: tudarmstadt.TUDarmstadtMoodle
   base_url: https://moodle.tu-darmstadt.de
   login_url: https://moodle.tu-darmstadt.de/login/index.php
   username: user
