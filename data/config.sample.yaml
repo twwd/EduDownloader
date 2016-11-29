@@ -1,37 +1,46 @@
 - name: Informatik Moodle
+  class: tudarmstadt.TUDarmstadtMoodle
   base_url: https://moodle.informatik.tu-darmstadt.de
-  login_url: https://moodle.informatik.tu-darmstadt.de/login/index.php?authCAS=CAS
+  login_url: https://moodle.informatik.tu-darmstadt.de/mod/url/view.php?id=1308
   username: user
   password: 'password with special chars'
   courses:
     - name: CNuvS Folien
-      id: 15
+      param: 15
       pattern: '\d\d CNuvS .*'
       local_folder: /path/to/folder
     - name: CER Folien
-      id: 47
+      param: 47
       pattern: 'Vorlesungsfolien'
       local_folder: /path/to/folder
     - name: VC Folien
-      id: 49
+      param: 49
       pattern: 'Vorlesungsfolien'
       local_folder: /path/to/folder
     - name: InfMan Folien
-      id: 17
+      param: 17
       pattern: 'Kapitel \d{1,2}: .*'
       local_folder: /path/to/folder
     - name: CER Übung
-      id: 47
+      param: 47
       pattern: 'Übung'
       local_folder: 'path/to/folder'
       rename: 'Uebung_%.pdf'
 - name: TU Moodle
+  class: tudarmstadt.TUDarmstadtMoodle
   base_url: https://moodle.tu-darmstadt.de
   login_url: https://moodle.tu-darmstadt.de/login/index.php
   username: user
   password: 'password'
   courses:
     - name: Mathe Skript
-      id: 7556
+      param: 7556
       pattern: Skript - Kapitel
       local_folder: /path/to/folder
+- name: STG Github
+  class: simpelsite.SimpleSite
+  base_url: https://stg-tud.github.io/sedc/Lecture/ws16-17/
+  courses:
+    - name: SEDC Folien
+      pattern: ^\d+-.*\.pdf
+      local_folder: /another/path/to/folder
