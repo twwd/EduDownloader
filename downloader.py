@@ -18,8 +18,8 @@ def load_plugin_class(plugin_class_str):
     module_path = "plugins." + ".".join(class_data[:-1])
     class_str = class_data[-1]
 
-    module = importlib.import_module(module_path)
-    return getattr(module, class_str)
+    mod = importlib.import_module(module_path)
+    return getattr(mod, class_str)
 
 
 # print if verbose output is on
@@ -152,7 +152,7 @@ def course_loop():
                     # update timestamp if there's a newer version of the file
                     elif not simulate and file_last_modified > file_last_modified_old[0]:
                         c.execute(
-                            'UPDATE file_modifications SET last_modified=? WHERE source=? AND course=? and file_name=?',
+                            'UPDATE file_modifications SET last_modified=? WHERE source=? AND course=? AND file_name=?',
                             (file_last_modified, src_cfg['name'], course['name'], file_name))
                     # otherwise skip saving
                     else:
@@ -188,10 +188,10 @@ def course_loop():
 
 def clear_course():
     if course_to_clear[0] == 'all':
-        c.execute("DELETE from file_modifications")
+        c.execute("DELETE FROM file_modifications")
         log('\nCleared all courses')
     else:
-        c.execute("DELETE from file_modifications WHERE course=?", course_to_clear)
+        c.execute("DELETE FROM file_modifications WHERE course=?", course_to_clear)
         log('\nCleared course %s' % course_to_clear[0])
     conn.commit()
 
