@@ -43,7 +43,8 @@ class TUDarmstadtMoodle(Source):
 
         # loop through links
         for link in links:
-            if link is not None and link.has_attr('href') and link['href'].find('resource') != -1:
+            if link is not None and link.has_attr('href') and (
+                            link['href'].find('resource') != -1 or link['href'].find('file') != -1):
                 link_list.append(Link(text=link.get_text(), url=link['href']))
         return link_list
 
