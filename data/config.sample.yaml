@@ -1,5 +1,5 @@
 - name: Informatik Moodle
-  class: tudarmstadt.TUDarmstadtMoodle
+  class: tudarmstadt.TUDarmstadtMoodle2018
   base_url: https://moodle.informatik.tu-darmstadt.de
   login_url: https://moodle.informatik.tu-darmstadt.de/mod/url/view.php?id=1308
   username: user

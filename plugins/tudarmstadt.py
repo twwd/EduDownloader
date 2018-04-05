@@ -1,4 +1,3 @@
-import re
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -12,12 +11,11 @@ class TUDarmstadtSSOLogin(Login):
     def login(self, session, username, password):
         if not self.is_logged_in(session):
             response = session.get(self.url)
-            # borrowed from Dominik
-            match = re.search(r'<input type="hidden" name="lt" value="(.*?)" />', response.text)
-            token = match.group(1)
-            match = re.search(r'name="execution" value="(.*?)"', response.text)
-            execution = match.group(1)
-            # do the real login
+
+            html = BeautifulSoup(response.text, 'html.parser')
+            token = html.find('input', {'name': 'lt'}).get('value')
+            execution = html.find('input', {'name': 'execution'}).get('value')
+
             params = {'username': username, 'password': password, 'lt': token,
                       'execution': execution, '_eventId': 'submit',
                       'submit': 'ANMELDEN'}
@@ -26,6 +24,21 @@ class TUDarmstadtSSOLogin(Login):
     def is_logged_in(self, session):
         response = session.get(self.url).text
         return response.find("Log In Successful") != -1 or response.find("Anmeldung erfolgreich") != -1
+
+
+class TUDarmstadtSSOLogin2018(Login):
+    url = 'https://sso.tu-darmstadt.de/login'
+
+    def login(self, session, username, password):
+        if 'TGC' not in session.cookies:
+            response = session.get(self.url)
+
+            html = BeautifulSoup(response.text, 'html.parser')
+            execution = html.find('input', {'name': 'execution'}).get('value')
+
+            params = {'username': username, 'password': password,
+                      'execution': execution, '_eventId': 'submit'}
+            session.post(response.url, params)
 
 
 class TUDarmstadtMoodle(Source):
@@ -44,7 +57,7 @@ class TUDarmstadtMoodle(Source):
         # loop through links
         for link in links:
             if link is not None and link.has_attr('href') and (
-                            link['href'].find('resource') != -1 or link['href'].find('file') != -1):
+                    link['href'].find('resource') != -1 or link['href'].find('file') != -1):
                 link_list.append(Link(text=link.get_text(), url=link['href']))
         return link_list
 
@@ -55,6 +68,13 @@ class TUDarmstadtMoodle(Source):
 
     def course_url(self, url, param):
         return urljoin(url, '/course/view.php?id=' + str(param))
+
+
+class TUDarmstadtMoodle2018(TUDarmstadtMoodle):
+    def login(self, session, login_url, username, password):
+        sso = TUDarmstadtSSOLogin2018()
+        sso.login(session, username, password)
+        session.get(login_url)
 
 
 class TUDarmstadtFacultySite(Source):
