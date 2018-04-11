@@ -82,8 +82,12 @@ def course_loop():
             else:
                 course_url = src_cfg['base_url']
 
-            # regex pattern
-            pattern = re.compile(course['pattern'])
+            # regex pattern for link text and file name
+            text_pattern = re.compile(course['pattern'])
+
+            filename_pattern = None
+            if 'filename_pattern' in course:
+                filename_pattern = re.compile(course['filename_pattern'])
 
             # get all relevant links from the source site
             links = src.link_list(session, course_url)
@@ -92,7 +96,7 @@ def course_loop():
                 continue
 
             for link in links:
-                if pattern.search(link[0]) is not None:
+                if text_pattern.search(link[0]) is not None:
                     # request file http header
                     file_request = session.head(link[1], allow_redirects=True)
 
@@ -111,6 +115,10 @@ def course_loop():
                         file_ext = os.path.splitext(file_name)[1]
                         if file_ext != course['ext'] and file_ext not in course['ext']:
                             continue
+
+                    # check file name
+                    if filename_pattern is not None and filename_pattern.search(file_name) is None:
+                        continue
 
                     # get last modified date as timestamp
                     if 'Last-Modified' in file_request.headers:
