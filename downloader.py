@@ -113,7 +113,7 @@ def course_loop():
                     # check extension
                     if 'ext' in course and course['ext'] is not False:
                         file_ext = os.path.splitext(file_name)[1]
-                        if file_ext != course['ext'] and file_ext not in course['ext']:
+                        if file_ext != course['ext'] or file_ext not in course['ext']:
                             continue
 
                     # check file name
@@ -126,15 +126,14 @@ def course_loop():
                                                                    '%a, %d %b %Y %H:%M:%S %Z').timestamp())
                     else:
                         print("No timestamp found for file %s" % file_name)
-                        conn.rollback()
                         continue
 
                     # adjust file name
                     if 'rename' in course and course['rename'] is not False:
                         # find a number
-                        num = re.search('\d{1,2}', link[0])
+                        num = re.search('\d{1,3}', link[0])
                         if num is None:
-                            num = re.search('\d{1,2}', file_name)
+                            num = re.search('\d{1,3}', file_name)
                         if num is None:
                             num = file_last_modified
                         else:
