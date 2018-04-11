@@ -5,38 +5,24 @@
   username: user
   password: 'password with special chars'
   courses:
-    - name: CNuvS Folien
-      param: 15
-      pattern: '\d\d CNuvS .*'
+    - name: Sample Course Slides # a name for the download task
+      param: 42 # optional (but leaving it out makes no sense in this case), moodle's ID of the course (/course/view.php?id=42)
+      pattern: '\d\d Lecture .*' # required, the regex pattern for the link's text
+      local_folder: /path/to/folder # required, the folder where the files should be saved
+      filename_pattern: 'Lecture_.*\.pdf' # optional, the regex pattern for the file name
+      rename: 'Slides_%.pdf' # optional, files can be renamed to this string. % stands for a number that is searched 1. in the link text or 2. the filename or a timestamp if not number is prestent
+    - name: Sample Course Exercices
+      param: 42
+      pattern: '\d\d Exercise'
       local_folder: /path/to/folder
-    - name: CER Folien
-      param: 47
-      pattern: 'Vorlesungsfolien'
+      ext: '.pdf' # optional, download only files with the given extension
+    - name: Another Course
+      param: 137
+      pattern: 'Slides'
       local_folder: /path/to/folder
-    - name: VC Folien
-      param: 49
-      pattern: 'Vorlesungsfolien'
-      local_folder: /path/to/folder
-    - name: InfMan Folien
-      param: 17
-      pattern: 'Kapitel \d{1,2}: .*'
-      local_folder: /path/to/folder
-    - name: CER Übung
-      param: 47
-      pattern: 'Übung'
-      local_folder: 'path/to/folder'
-      rename: 'Uebung_%.pdf'
-- name: TU Moodle
-  class: tudarmstadt.TUDarmstadtMoodle
-  base_url: https://moodle.tu-darmstadt.de
-  login_url: https://moodle.tu-darmstadt.de/login/index.php
-  username: user
-  password: 'password'
-  courses:
-    - name: Mathe Skript
-      param: 7556
-      pattern: Skript - Kapitel
-      local_folder: /path/to/folder
+      ext: # optional, also a list of extensions can be specified
+        - '.pdf'
+        - '.pptx'
 - name: STG Github
   class: simpelsite.SimpleSite
   base_url: https://stg-tud.github.io/sedc/Lecture/ws16-17/
