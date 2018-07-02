@@ -140,6 +140,9 @@ def course_loop():
                             num = num.group(0)
                         file_name = course['rename'].replace('%', str(num))
 
+                    # remove trailing whitespaces
+                    file_name = file_name.strip()
+
                     # the complete file path
                     file_path = os.path.join(course['local_folder'], file_name)
 
@@ -164,7 +167,7 @@ def course_loop():
                     # otherwise skip saving
                     else:
                         skip_count += 1
-                        log(file_name + ' (skipped)')
+                        # log(file_name + ' (skipped)')
                         continue
 
                     log(file_name + ' (new)')
