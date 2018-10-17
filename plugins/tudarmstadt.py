@@ -62,7 +62,7 @@ class TUDarmstadtMoodle(Source):
         return link_list
 
     def login(self, session, login_url, username, password):
-        sso = TUDarmstadtSSOLogin()
+        sso = TUDarmstadtSSOLogin2018()
         sso.login(session, username, password)
         session.get(login_url)
 
