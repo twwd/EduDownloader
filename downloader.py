@@ -5,6 +5,7 @@ import os
 import re
 import sqlite3
 from datetime import datetime
+from urllib.parse import urljoin
 
 import requests
 import yaml
@@ -77,7 +78,9 @@ def course_loop():
 
             log('\nCourse: %s\n' % course['name'])
 
-            if 'param' in course and course['param'] is not None:
+            if 'path' in course and course['path'] is not None:
+                course_url = urljoin(src_cfg['base_url'], course['path'])
+            elif 'param' in course and course['param'] is not None:
                 course_url = src.course_url(src_cfg['base_url'], course['param'])
             else:
                 course_url = src_cfg['base_url']
@@ -122,8 +125,7 @@ def course_loop():
 
                     # get last modified date as timestamp
                     if 'Last-Modified' in file_request.headers:
-                        file_last_modified = int(datetime.strptime(file_request.headers['Last-Modified'],
-                                                                   '%a, %d %b %Y %H:%M:%S %Z').timestamp())
+                        file_last_modified = int(datetime.strptime(file_request.headers['Last-Modified'], '%a, %d %b %Y %H:%M:%S %Z').timestamp())
                     else:
                         print("No timestamp found for file %s" % file_name)
                         continue

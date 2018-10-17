@@ -6,11 +6,11 @@
   password: 'password with special chars'
   courses:
     - name: Sample Course Slides # a name for the download task
-      param: 42 # optional (but leaving it out makes no sense in this case), moodle's ID of the course (/course/view.php?id=42)
+      param: 42 # optional (but leaving it out makes no sense in this case), Moodle's ID of the course (/course/view.php?id=42)
       pattern: '\d\d Lecture .*' # required, the regex pattern for the link's text
       local_folder: /path/to/folder # required, the folder where the files should be saved
       filename_pattern: 'Lecture_.*\.pdf' # optional, the regex pattern for the file name
-      rename: 'Slides_%.pdf' # optional, files can be renamed to this string. % stands for a number that is searched 1. in the link text or 2. the filename or a timestamp if not number is prestent
+      rename: 'Slides_%.pdf' # optional, files can be renamed to this string. % stands for a number that is searched 1. in the link text or 2. the filename or a timestamp if not number is present
     - name: Sample Course Exercices
       param: 42
       pattern: '\d\d Exercise'
@@ -23,6 +23,10 @@
       ext: # optional, also a list of extensions can be specified
         - '.pdf'
         - '.pptx'
+    - name: Yet another Course
+      path: /mod/folder/view.php?id=0815 # If you want to download from a Moodle folder, use set the path value to the folder
+      pattern: '201\d-\d\d-\d\d_lecture_.*'
+      local_folder: /path/
 - name: STG Github
   class: simpelsite.SimpleSite
   base_url: https://stg-tud.github.io/sedc/Lecture/ws16-17/
