@@ -114,8 +114,8 @@ def course_loop():
                         file_name = link[1].rsplit('/', 1)[-1]
 
                     # check extension
+                    file_ext = os.path.splitext(file_name)[1]
                     if 'ext' in course and course['ext'] is not False:
-                        file_ext = os.path.splitext(file_name)[1]
                         if file_ext != course['ext'] or file_ext not in course['ext']:
                             continue
 
@@ -140,7 +140,7 @@ def course_loop():
                             num = file_last_modified
                         else:
                             num = num.group(0)
-                        file_name = course['rename'].replace('%', str(num))
+                        file_name = course['rename'].replace('%', str(num)) + file_ext
 
                     # remove trailing whitespaces
                     file_name = file_name.strip()
